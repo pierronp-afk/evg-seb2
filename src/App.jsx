@@ -37,19 +37,20 @@ import {
   Calculator,
   Scale,
   ArrowRight,
-  Euro,
+  Euro, 
   RotateCw,
   Save,
   AlignLeft,
   Calendar,
   Car,
   MapPin,
-  KeyRound
+  KeyRound,
+  LogOut
 } from 'lucide-react';
 
 // --- Configuration Firebase ---
-// NOTE POUR LA MISE EN LIGNE : Remplacez les lignes ci-dessous par votre propre configuration Firebase
-// Si __firebase_config n'est pas défini (local), utilisez une config vide ou par défaut pour éviter le crash immédiat
+// NOTE : Remplacez par VOTRE configuration si nécessaire.
+// Celle-ci est basée sur les infos vues dans vos logs précédents.
 const firebaseConfig = {
   apiKey: "AIzaSyDPkr06UgZa-EiveZrLzKkDbOOVB5AuYJU",
   authDomain: "evg-seb.firebaseapp.com",
@@ -58,9 +59,17 @@ const firebaseConfig = {
   messagingSenderId: "758953125301",
   appId: "1:758953125301:web:103e85e7a9744b8b54e5fc"
 };
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Initialisation sécurisée de Firebase pour éviter les crashs
+let app, auth, db;
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+} catch (error) {
+  console.error("Erreur initialisation Firebase:", error);
+}
+
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 // --- Composants UI de Base ---
@@ -542,9 +551,17 @@ export default function App() {
   // Initialisation Auth
   useEffect(() => {
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          // Tente de se connecter avec le token fourni par l'environnement
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          // Sinon, connexion anonyme standard
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        // Si le token ne correspond pas (ex: config personnalisée), on fallback sur l'anonyme
+        console.warn("Erreur auth token (normal si config perso), passage en anonyme:", error);
         await signInAnonymously(auth);
       }
     };
@@ -634,6 +651,14 @@ export default function App() {
     }
   };
 
+  const handleLogout = () => {
+    if (confirm("Se déconnecter ?")) {
+      localStorage.removeItem('evg_username');
+      setUsername('');
+      setIsJoined(false);
+    }
+  };
+
   const handleAddParticipantByAdmin = async (name) => {
     if (!name.trim()) return;
     if (!participants.includes(name)) {
@@ -641,6 +666,13 @@ export default function App() {
       const ref = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
       await setDoc(ref, { names: newParticipants }, { merge: true });
     }
+  };
+
+  const handleRemoveParticipant = async (nameToRemove) => {
+    if (!confirm(`Supprimer ${nameToRemove} de la liste ?`)) return;
+    const newParticipants = participants.filter(p => p !== nameToRemove);
+    const ref = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
+    await setDoc(ref, { names: newParticipants }, { merge: true });
   };
 
   const handleAddItem = async (itemData) => {
@@ -918,6 +950,13 @@ export default function App() {
               title="Mode Organisateur"
             >
               {isAdminMode ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="p-2 rounded-lg bg-gray-700 text-gray-400 hover:text-white hover:bg-gray-600 transition-colors"
+              title="Se déconnecter"
+            >
+              <LogOut className="w-5 h-5" />
             </button>
             <div className="hidden md:flex bg-gray-700 px-3 py-1.5 rounded-full text-sm">
               <span className="text-gray-400 mr-1">Moi:</span>
@@ -1316,12 +1355,19 @@ export default function App() {
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                  {participants.map((p, idx) => (
-                   <div key={idx} className="flex items-center gap-3 bg-gray-700/50 p-3 rounded-lg border border-gray-700">
-                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold shadow-lg">
-                       {p.charAt(0).toUpperCase()}
+                   <div key={idx} className="flex items-center gap-3 bg-gray-700/50 p-3 rounded-lg border border-gray-700 justify-between">
+                     <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold shadow-lg">
+                         {p.charAt(0).toUpperCase()}
+                       </div>
+                       <span className="font-medium">{p}</span>
+                       {p === username && <span className="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30">Moi</span>}
                      </div>
-                     <span className="font-medium">{p}</span>
-                     {p === username && <span className="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30">Moi</span>}
+                     {isAdminMode && (
+                       <button onClick={() => handleRemoveParticipant(p)} className="text-gray-500 hover:text-red-500 transition-colors p-2">
+                         <X className="w-4 h-4" />
+                       </button>
+                     )}
                    </div>
                  ))}
                </div>
