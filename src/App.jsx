@@ -37,7 +37,7 @@ import {
   Calculator,
   Scale,
   ArrowRight,
-  BadgeEuro,
+  Euro,
   RotateCw,
   Save,
   AlignLeft,
@@ -1167,7 +1167,7 @@ export default function App() {
             
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <Card className="bg-gradient-to-br from-indigo-900 to-gray-800 border-indigo-500/30">
-                 <h3 className="text-gray-400 uppercase text-xs font-bold mb-2 flex items-center gap-2"><BadgeEuro className="w-4 h-4" /> Total Dépensé</h3>
+                 <h3 className="text-gray-400 uppercase text-xs font-bold mb-2 flex items-center gap-2"><Euro className="w-4 h-4" /> Total Dépensé</h3>
                  <div className="text-3xl font-black">{balance.totalSpent.toFixed(0)} €</div>
                  <div className="text-sm text-gray-300 mt-1">
                     Soit <strong className="text-white">{(balance.totalSpent / Math.max(participants.length, 1)).toFixed(2)} €</strong> / personne
