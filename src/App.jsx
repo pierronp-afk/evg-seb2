@@ -47,7 +47,8 @@ import {
   MapPin,
   KeyRound,
   LogOut,
-  UserCog
+  UserCog,
+  Link as LinkIcon
 } from 'lucide-react';
 
 // --- Configuration Firebase ---
@@ -76,18 +77,22 @@ const formatName = (name) => {
   return name.trim().charAt(0).toUpperCase() + name.trim().slice(1).toLowerCase();
 };
 
+const formatDateRange = (start, end) => {
+  if (!start) return "";
+  const d1 = new Date(start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  if (!end || start === end) return d1;
+  const d2 = new Date(end).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return `Du ${d1} au ${d2}`;
+};
+
 // --- Composants UI "Féria" ---
 
 const Button = ({ children, onClick, variant = 'primary', className = '', size = 'md', disabled = false, type="button" }) => {
   const baseStyle = "font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 transform active:scale-95";
   const variants = {
-    // Rouge Féria (Foulard)
     primary: "bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-200 border-b-4 border-red-800 active:border-b-0 active:mt-1",
-    // Vert Féria (Nature/Basque)
     secondary: "bg-green-700 hover:bg-green-800 text-white border-b-4 border-green-900 active:border-b-0 active:mt-1",
-    // Danger
     danger: "bg-white border-2 border-red-200 text-red-600 hover:bg-red-50",
-    // Ghost
     ghost: "bg-transparent hover:bg-green-100 text-green-800 hover:text-green-900"
   };
   const sizes = {
@@ -117,8 +122,8 @@ const Card = ({ children, className = '' }) => (
 const Badge = ({ children, type = 'neutral' }) => {
   const types = {
     neutral: "bg-gray-100 text-gray-600 border-gray-200",
-    success: "bg-green-100 text-green-700 border-green-200", // Vert Validé
-    warning: "bg-red-100 text-red-700 border-red-200", // Rouge Tendance
+    success: "bg-green-100 text-green-700 border-green-200", 
+    warning: "bg-red-100 text-red-700 border-red-200", 
     info: "bg-blue-50 text-blue-600 border-blue-100",
   };
   return (
@@ -231,10 +236,20 @@ const AddItemForm = ({ type, onAdd, activeTab }) => {
   const [link, setLink] = useState('');
   const [description, setDescription] = useState('');
   const [imageKeyword, setImageKeyword] = useState('');
+  const [imagePasteUrl, setImagePasteUrl] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Logique Image : URL collée > Mot clé IA
+    let finalImageUrl = null;
+    if (imagePasteUrl.trim()) {
+        finalImageUrl = imagePasteUrl.trim();
+    } else if (imageKeyword.trim()) {
+        finalImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imageKeyword)}`;
+    }
+
     onAdd({
       type: activeTab === 'activities' ? 'activity' : 'housing',
       title,
@@ -242,15 +257,15 @@ const AddItemForm = ({ type, onAdd, activeTab }) => {
       priceType,
       link: link,
       description: description,
-      imageUrl: imageKeyword 
-        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(imageKeyword)}`
-        : null
+      imageUrl: finalImageUrl
     });
+    
     setTitle('');
     setCost('');
     setLink('');
     setDescription('');
     setImageKeyword('');
+    setImagePasteUrl('');
     setPriceType('total');
     setIsOpen(false);
   };
@@ -328,7 +343,7 @@ const AddItemForm = ({ type, onAdd, activeTab }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
-              <ExternalLink className="w-3 h-3" /> Lien
+              <ExternalLink className="w-3 h-3" /> Lien Web
             </label>
             <input 
               type="url" value={link} onChange={e => setLink(e.target.value)} 
@@ -336,15 +351,28 @@ const AddItemForm = ({ type, onAdd, activeTab }) => {
               className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
             />
           </div>
-          <div>
-            <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" /> Mot-clé Image (IA)
-            </label>
-            <input 
-              value={imageKeyword} onChange={e => setImageKeyword(e.target.value)} 
-              placeholder="Ex: Beer, Beach, Kart..."
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
-            />
+          <div className="space-y-2">
+            <div>
+                <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
+                <LinkIcon className="w-3 h-3" /> Image (URL directe)
+                </label>
+                <input 
+                value={imagePasteUrl} onChange={e => setImagePasteUrl(e.target.value)} 
+                placeholder="https://... (Prioritaire)"
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+                />
+            </div>
+            <div>
+                <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
+                <ImageIcon className="w-3 h-3" /> OU Génération IA
+                </label>
+                <input 
+                value={imageKeyword} onChange={e => setImageKeyword(e.target.value)} 
+                placeholder="Mot clé (ex: Beer, Kart)"
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+                disabled={!!imagePasteUrl}
+                />
+            </div>
           </div>
         </div>
         <div className="flex justify-end gap-3 pt-2">
@@ -364,7 +392,8 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
   const [editCost, setEditCost] = useState(item.cost);
   const [editDesc, setEditDesc] = useState(item.description || '');
   const [editLink, setEditLink] = useState(item.link || '');
-  const [editImageKeyword, setEditImageKeyword] = useState('');
+  const [editImageKeyword, setEditImageKeyword] = useState(''); // Keep for simple edit
+  const [editImageUrl, setEditImageUrl] = useState(item.imageUrl || '');
 
   const hasVoted = item.votes.includes(userId);
   const voteCount = item.votes.length;
@@ -376,22 +405,28 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
 
   const handleSave = async (e) => {
     e.stopPropagation();
+    
+    let finalUrl = editImageUrl;
+    // Si on a un mot clé IA et pas d'URL forcée, on génère
+    if (!finalUrl && editImageKeyword) {
+        finalUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(editImageKeyword)}`;
+    }
+
     const updateData = {
       title: editTitle,
       cost: parseFloat(editCost) || 0,
       description: editDesc,
       link: editLink,
+      imageUrl: finalUrl
     };
-    if (editImageKeyword) {
-      updateData.imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(editImageKeyword)}`;
-    }
     await onUpdate(item.id, updateData);
     setIsEditing(false);
     setIsFlipped(false);
   };
 
   const toggleFlip = (e) => {
-    e.stopPropagation();
+    // Si on clique sur un bouton interactif, on ne retourne pas
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) return;
     setIsFlipped(!isFlipped);
   };
 
@@ -406,7 +441,7 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
             <input className="w-1/2 bg-gray-50 border border-gray-200 p-2 rounded" type="number" value={editCost} onChange={e => setEditCost(e.target.value)} placeholder="Prix" />
             <input className="w-1/2 bg-gray-50 border border-gray-200 p-2 rounded" value={editLink} onChange={e => setEditLink(e.target.value)} placeholder="Lien" />
           </div>
-          <input className="w-full bg-gray-50 border border-gray-200 p-2 rounded" value={editImageKeyword} onChange={e => setEditImageKeyword(e.target.value)} placeholder="Mot clé image (optionnel)" />
+          <input className="w-full bg-gray-50 border border-gray-200 p-2 rounded" value={editImageUrl} onChange={e => setEditImageUrl(e.target.value)} placeholder="URL Image (Optionnel)" />
           <div className="flex justify-end gap-2 mt-2">
             <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setIsEditing(false); }}>Annuler</Button>
             <Button size="sm" onClick={handleSave}><Save className="w-4 h-4"/> Enregistrer</Button>
@@ -417,7 +452,10 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
   }
 
   return (
-    <div className={`relative group bg-white rounded-xl overflow-hidden border-2 transition-all flex flex-col h-full shadow-lg ${item.validated ? 'border-green-500 ring-2 ring-green-100' : 'border-gray-100'}`}>
+    <div 
+        className={`relative group bg-white rounded-xl overflow-hidden border-2 transition-all flex flex-col h-full shadow-lg cursor-pointer ${item.validated ? 'border-green-500 ring-2 ring-green-100' : 'border-gray-100'}`}
+        onClick={toggleFlip}
+    >
       
       {/* FACE AVANT */}
       <div className={`${isFlipped ? 'invisible' : ''} flex-1 flex flex-col`}>
@@ -437,7 +475,7 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
             </div>
           )}
 
-          {/* Validation Admin - En haut à gauche (FIXÉ) */}
+          {/* Validation Admin - En haut à gauche */}
           <div className="absolute top-2 left-2 z-10" onClick={e => e.stopPropagation()}>
             {isAdmin ? (
               <button 
@@ -471,7 +509,7 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
             <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
               <div className="flex items-center gap-3">
                 <button 
-                  onClick={onVote}
+                  onClick={(e) => { e.stopPropagation(); onVote(); }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-sm font-bold ${
                     hasVoted 
                       ? 'bg-red-500 text-white shadow-md shadow-red-200' 
@@ -491,7 +529,7 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
               <div className="flex items-center gap-2">
                 <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{item.addedBy}</span>
                 {(item.addedBy === userId || isAdmin) && (
-                  <button onClick={onDelete} className="text-gray-300 hover:text-red-500 p-1 transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-gray-300 hover:text-red-500 p-1 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -500,9 +538,9 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
           </div>
       </div>
 
-      {/* Bouton Flip - En haut à droite (FIXÉ) */}
+      {/* Bouton Flip - En haut à droite */}
       <button 
-         onClick={toggleFlip}
+         onClick={(e) => { e.stopPropagation(); toggleFlip(e); }}
          className="absolute top-2 right-2 z-20 bg-white/90 backdrop-blur rounded-full p-2 text-gray-600 hover:text-green-600 transition-all shadow-md hover:scale-110 border border-gray-100"
          title="Plus d'infos"
       >
@@ -514,7 +552,7 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
         <div className="absolute inset-0 bg-white p-6 flex flex-col h-full animate-fade-in z-30">
           <div className="flex justify-between items-start mb-4 border-b border-gray-100 pb-2">
              <h3 className="font-bold text-lg text-green-800">{item.title}</h3>
-             <button onClick={toggleFlip} className="text-gray-400 hover:text-red-500"><X className="w-5 h-5" /></button>
+             <button onClick={(e) => { e.stopPropagation(); toggleFlip(e); }} className="text-gray-400 hover:text-red-500"><X className="w-5 h-5" /></button>
           </div>
           
           <div className="flex-1 overflow-y-auto mb-4 text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
@@ -545,19 +583,21 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
 
 export default function App() {
   const [user, setUser] = useState(null);
-  // On stocke maintenant un objet user dans le state local si on veut gérer le PIN plus tard
-  const [currentUserData, setCurrentUserData] = useState(null); 
   const [username, setUsername] = useState(localStorage.getItem('evg_username') || '');
   const [isJoined, setIsJoined] = useState(!!localStorage.getItem('evg_username'));
-  const [activeTab, setActiveTab] = useState('activities');
+  const [activeTab, setActiveTab] = useState(localStorage.getItem('evg_active_tab') || 'activities');
   const [items, setItems] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [logistics, setLogistics] = useState({ dates: [], cars: [] });
   const [settings, setSettings] = useState({ title: "EVG", date: "", accessCode: "1234" });
-  const [participants, setParticipants] = useState([]); // Liste simple des noms
-  const [usersInfo, setUsersInfo] = useState({}); // Info détaillée { "Seb": { pin: "0000" } }
+  const [participants, setParticipants] = useState([]); 
+  const [usersInfo, setUsersInfo] = useState({}); 
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('evg_active_tab', activeTab);
+  }, [activeTab]);
 
   // Initialisation Auth
   useEffect(() => {
@@ -577,21 +617,18 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
-    // Items
     const itemsQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'evg_items'));
     const unsubItems = onSnapshot(itemsQuery, (snapshot) => {
       const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setItems(itemsData);
-    }, (error) => console.error("Erreur items:", error));
+    });
 
-    // Expenses
     const expensesQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'evg_expenses'));
     const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
       const expensesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setExpenses(expensesData);
-    }, (error) => console.error("Erreur expenses:", error));
+    });
 
-    // Logistics
     const datesQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'evg_dates'));
     const unsubDates = onSnapshot(datesQuery, (snapshot) => {
       const datesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -604,7 +641,6 @@ export default function App() {
       setLogistics(prev => ({ ...prev, cars: carsData }));
     });
 
-    // Settings
     const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'main');
     const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -614,7 +650,6 @@ export default function App() {
       }
     });
 
-    // Participants List (Array)
     const participantsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
     const unsubParticipants = onSnapshot(participantsRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -622,7 +657,6 @@ export default function App() {
       }
     });
 
-    // Users Info (Detailed)
     const usersInfoRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
     const unsubUsersInfo = onSnapshot(usersInfoRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -646,38 +680,49 @@ export default function App() {
   const handleJoin = async (rawName, code, personalPin) => {
     if (!rawName.trim()) return;
     
-    // 1. Code Global Check
-    const requiredCode = settings.accessCode || "1234";
-    if (code !== requiredCode) {
-      alert("Code d'accès général incorrect !");
-      return;
-    }
-
-    // 2. Formatage du nom (Seb, pas seb)
+    // 1. Formatage du nom (Seb, pas seb)
     const name = formatName(rawName);
 
-    // 3. Vérification si l'utilisateur existe déjà
+    // 2. Vérification si l'utilisateur existe déjà
     const userDetails = usersInfo[name];
 
-    if (userDetails && userDetails.pin) {
-      // Si l'utilisateur a un PIN perso, on le demande (sauf si c'est la création)
-      if (userDetails.pin !== personalPin) {
-        // Cas : Il essaye de se connecter mais le PIN perso est faux
-        // Ou il n'a pas mis de PIN perso dans le champ (vide)
-        if (!personalPin) {
-           const inputPin = prompt(`Salut ${name} ! Entre ton code PIN personnel pour te connecter :`);
-           if (inputPin !== userDetails.pin) {
-             alert("Code PIN personnel incorrect.");
+    if (userDetails) {
+      // UTILISATEUR EXISTANT
+      // On demande le PIN perso au lieu du code général
+      if (!userDetails.pin) {
+          // Cas rare : Ancien user sans PIN (on le laisse passer ou on demande d'en créer un ?)
+          // Pour la sécu, on demande le code général ici exceptionnellement
+          if (code !== (settings.accessCode || "1234")) {
+             alert("Code général incorrect !");
              return;
-           }
-        } else {
-           alert("Ce profil est protégé par un PIN incorrect.");
-           return;
-        }
+          }
+      } else {
+          // User a un PIN : On vérifie le PIN donné OU on demande
+          let pinToCheck = personalPin;
+          if (!pinToCheck) {
+             pinToCheck = prompt(`Salut ${name} ! Entre ton Code PIN Perso :`);
+          }
+          
+          if (pinToCheck !== userDetails.pin) {
+             alert("Code PIN personnel incorrect !");
+             return;
+          }
+      }
+    } else {
+      // NOUVEL UTILISATEUR
+      // 1. Vérif Code Général
+      if (code !== (settings.accessCode || "1234")) {
+        alert("Code d'accès général incorrect !");
+        return;
+      }
+      // 2. Vérif PIN Perso Obligatoire
+      if (!personalPin || personalPin.length < 3) {
+        alert("Tu dois choisir un Code PIN personnel (min 3 chiffres) !");
+        return;
       }
     }
 
-    // 4. Inscription / Connexion
+    // 3. Connexion
     localStorage.setItem('evg_username', name);
     setUsername(name);
     setIsJoined(true);
@@ -689,7 +734,7 @@ export default function App() {
       await setDoc(ref, { names: newParticipants }, { merge: true });
     }
 
-    // Mise à jour du PIN perso si fourni à la première connexion ou modification
+    // Mise à jour du PIN perso si fourni (Création ou Mise à jour)
     if (personalPin) {
         const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
         await setDoc(detailsRef, { [name]: { pin: personalPin } }, { merge: true });
@@ -713,26 +758,19 @@ export default function App() {
       return;
     }
 
-    // Update Participants List
     const newParticipants = participants.map(p => p === username ? formattedNewName : p);
     const listRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
     await setDoc(listRef, { names: newParticipants }, { merge: true });
 
-    // Update User Details (Pin)
     const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
-    // On ne supprime pas l'ancienne clé (compliqué en firestore deep update), on ajoute la nouvelle
-    // Idéalement il faudrait nettoyer, mais pour l'EVG ça suffit.
     await setDoc(detailsRef, { 
       [formattedNewName]: { pin: newPin || (usersInfo[username]?.pin || "") } 
     }, { merge: true });
 
-    // Update Local Storage
     localStorage.setItem('evg_username', formattedNewName);
     setUsername(formattedNewName);
     setShowEditProfile(false);
   };
-
-  // --- ACTIONS ADMIN ---
 
   const handleAddParticipantByAdmin = async (name) => {
     if (!name.trim()) return;
@@ -750,8 +788,6 @@ export default function App() {
     const ref = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
     await setDoc(ref, { names: newParticipants }, { merge: true });
   };
-
-  // --- ACTIONS ITEMS ---
 
   const handleAddItem = async (itemData) => {
     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'evg_items'), {
@@ -788,9 +824,10 @@ export default function App() {
     });
   };
 
-  const handleAddDate = async (dateVal) => {
+  const handleAddDate = async (startDate, endDate) => {
     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'evg_dates'), {
-      date: dateVal,
+      date: startDate,
+      endDate: endDate || startDate,
       votes: [],
       addedBy: username
     });
@@ -845,7 +882,6 @@ export default function App() {
     }, { merge: true });
   };
 
-  // Calculs Budgétaires
   const budget = useMemo(() => {
     const activities = items.filter(i => i.type === 'activity');
     const housing = items.filter(i => i.type === 'housing');
@@ -867,7 +903,6 @@ export default function App() {
     return { validated, trending, total, userCount };
   }, [items, participants]);
 
-  // Balance
   const balance = useMemo(() => {
     if (participants.length === 0) return { balances: {}, debts: [] };
     const balances = {};
@@ -931,17 +966,17 @@ export default function App() {
                     <input 
                         name="code"
                         type="tel" 
-                        required
                         className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none text-center tracking-widest font-bold"
                         placeholder="1234"
                     />
                 </div>
                 <div className="flex-1">
-                    <label className="block text-xs font-bold text-green-600 mb-1 uppercase">Ton PIN (Optionnel)</label>
+                    <label className="block text-xs font-bold text-red-600 mb-1 uppercase">Ton PIN (Perso)</label>
                     <input 
                         name="pin"
                         type="tel" 
-                        className="w-full bg-white border-2 border-green-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none text-center tracking-widest font-bold placeholder-green-200"
+                        required
+                        className="w-full bg-white border-2 border-red-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-red-500 outline-none text-center tracking-widest font-bold placeholder-red-200"
                         placeholder="0000"
                     />
                 </div>
@@ -1099,12 +1134,17 @@ export default function App() {
               <Card>
                  <form onSubmit={(e) => {
                    e.preventDefault();
-                   if(e.target.date.value) {
-                     handleAddDate(e.target.date.value);
-                     e.target.date.value = '';
+                   if(e.target.dateStart.value) {
+                     handleAddDate(e.target.dateStart.value, e.target.dateEnd.value);
+                     e.target.dateStart.value = '';
+                     e.target.dateEnd.value = '';
                    }
-                 }} className="flex gap-2 mb-4">
-                   <input name="date" type="date" className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900" required />
+                 }} className="flex gap-2 mb-4 items-center">
+                   <div className="flex-1 flex gap-2">
+                        <input name="dateStart" type="date" className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-gray-900 text-xs" required />
+                        <span className="text-gray-400 self-center">au</span>
+                        <input name="dateEnd" type="date" className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-gray-900 text-xs" />
+                   </div>
                    <Button size="sm" type="submit"><Plus className="w-4 h-4"/></Button>
                  </form>
 
@@ -1115,7 +1155,7 @@ export default function App() {
                      return (
                        <div key={dateItem.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-green-100">
                          <div className="flex flex-col">
-                            <span className="font-bold text-green-900">{new Date(dateItem.date).toLocaleDateString()}</span>
+                            <span className="font-bold text-green-900">{formatDateRange(dateItem.date, dateItem.endDate)}</span>
                             <span className="text-xs text-gray-500 font-bold">{votes.length} votes</span>
                          </div>
                          <div className="flex items-center gap-2">
