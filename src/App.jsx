@@ -16,7 +16,8 @@ import {
   updateDoc, 
   deleteDoc, 
   query,
-  getDoc
+  getDoc,
+  deleteField
 } from 'firebase/firestore';
 import { 
   Beer, 
@@ -783,10 +784,18 @@ export default function App() {
   };
 
   const handleRemoveParticipant = async (nameToRemove) => {
-    if (!confirm(`Supprimer ${nameToRemove} de la liste ?`)) return;
+    if (!confirm(`Supprimer ${nameToRemove} de la liste ?\nAttention : Ses données de connexion (PIN) seront effacées.`)) return;
+    
+    // 1. Update List
     const newParticipants = participants.filter(p => p !== nameToRemove);
-    const ref = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
-    await setDoc(ref, { names: newParticipants }, { merge: true });
+    const listRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
+    await setDoc(listRef, { names: newParticipants }, { merge: true });
+
+    // 2. Clear PIN/Details (Reset Registration)
+    const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
+    await updateDoc(detailsRef, {
+        [nameToRemove]: deleteField()
+    });
   };
 
   const handleAddItem = async (itemData) => {
@@ -885,7 +894,10 @@ export default function App() {
   const budget = useMemo(() => {
     const activities = items.filter(i => i.type === 'activity');
     const housing = items.filter(i => i.type === 'housing');
-    const allItems = [...activities, ...housing];
+    
+    // Sort housings by votes desc
+    const sortedHousing = [...housing].sort((a, b) => b.votes.length - a.votes.length);
+    const topHousing = sortedHousing[0];
     const userCount = Math.max(participants.length, 1);
 
     const calculateItemCost = (item) => {
@@ -896,11 +908,27 @@ export default function App() {
       return baseCost;
     };
 
-    const validated = allItems.filter(i => i.validated).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
-    const trending = allItems.filter(i => i.validated || (i.votes.length >= userCount / 2)).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
-    const total = allItems.reduce((acc, curr) => acc + calculateItemCost(curr), 0);
+    // ACTIVITIES
+    const activitiesValidated = activities.filter(i => i.validated).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
+    const activitiesTrending = activities.filter(i => i.validated || (i.votes.length >= userCount / 2)).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
+    const activitiesTotal = activities.reduce((acc, curr) => acc + calculateItemCost(curr), 0);
 
-    return { validated, trending, total, userCount };
+    // HOUSING (Special Logic: Only ONE housing counts)
+    // 1. Validated: Sum of Validated Housing(s). If multiple validated, sum them (Admin choice). If none, 0.
+    const housingValidated = housing.filter(i => i.validated).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
+    
+    // 2. Trending: Cost of the TOP VOTED housing only.
+    const housingTrending = topHousing ? calculateItemCost(topHousing) : 0;
+
+    // 3. Total: Cost of the TOP VOTED housing only (Assumption: we sleep in one place).
+    const housingTotal = topHousing ? calculateItemCost(topHousing) : 0;
+
+    return { 
+        validated: activitiesValidated + housingValidated, 
+        trending: activitiesTrending + housingTrending, 
+        total: activitiesTotal + housingTotal, 
+        userCount 
+    };
   }, [items, participants]);
 
   const balance = useMemo(() => {
