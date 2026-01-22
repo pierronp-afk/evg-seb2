@@ -595,6 +595,7 @@ export default function App() {
   const [usersInfo, setUsersInfo] = useState({}); 
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [isParticipantsLoaded, setIsParticipantsLoaded] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('evg_active_tab', activeTab);
@@ -656,6 +657,7 @@ export default function App() {
       if (docSnap.exists()) {
         setParticipants(docSnap.data().names || []);
       }
+      setIsParticipantsLoaded(true);
     });
 
     const usersInfoRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
@@ -675,6 +677,18 @@ export default function App() {
       unsubUsersInfo();
     };
   }, [user]);
+
+  // Sécurité : Déconnexion forcée si le participant est supprimé
+  useEffect(() => {
+    if (isParticipantsLoaded && isJoined && username) {
+      if (!participants.includes(username)) {
+        alert("Votre profil a été supprimé de la liste des participants.");
+        localStorage.removeItem('evg_username');
+        setUsername('');
+        setIsJoined(false);
+      }
+    }
+  }, [isParticipantsLoaded, participants, isJoined, username]);
 
   // --- LOGIQUE INSCRIPTION ET PROFIL ---
 
