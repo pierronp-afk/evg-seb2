@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -49,7 +49,8 @@ import {
   KeyRound,
   LogOut,
   UserCog,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Bell
 } from 'lucide-react';
 
 // --- Configuration Firebase ---
@@ -84,6 +85,20 @@ const formatDateRange = (start, end) => {
   if (!end || start === end) return d1;
   const d2 = new Date(end).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   return `Du ${d1} au ${d2}`;
+};
+
+const triggerNotification = (title, body) => {
+  if (!("Notification" in window)) return;
+  
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/vite.svg' });
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        new Notification(title, { body, icon: '/vite.svg' });
+      }
+    });
+  }
 };
 
 // --- Composants UI "Féria" ---
@@ -230,25 +245,23 @@ const AddExpenseForm = ({ participants, onAdd }) => {
   );
 };
 
-const AddItemForm = ({ type, onAdd, activeTab }) => {
+const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
   const [title, setTitle] = useState('');
   const [cost, setCost] = useState('');
   const [priceType, setPriceType] = useState('total');
   const [link, setLink] = useState('');
   const [description, setDescription] = useState('');
-  const [imageKeyword, setImageKeyword] = useState('');
   const [imagePasteUrl, setImagePasteUrl] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Logique Image : URL collée > Mot clé IA
     let finalImageUrl = null;
     if (imagePasteUrl.trim()) {
         finalImageUrl = imagePasteUrl.trim();
-    } else if (imageKeyword.trim()) {
-        finalImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imageKeyword)}`;
+    } else {
+        finalImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(title)}`;
     }
 
     onAdd({
@@ -265,7 +278,6 @@ const AddItemForm = ({ type, onAdd, activeTab }) => {
     setCost('');
     setLink('');
     setDescription('');
-    setImageKeyword('');
     setImagePasteUrl('');
     setPriceType('total');
     setIsOpen(false);
@@ -341,7 +353,7 @@ const AddItemForm = ({ type, onAdd, activeTab }) => {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
               <ExternalLink className="w-3 h-3" /> Lien Web
@@ -359,19 +371,8 @@ const AddItemForm = ({ type, onAdd, activeTab }) => {
                 </label>
                 <input 
                 value={imagePasteUrl} onChange={e => setImagePasteUrl(e.target.value)} 
-                placeholder="https://... (Prioritaire)"
+                placeholder="Coller le lien d'une image ici... (Sinon IA auto)"
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
-                />
-            </div>
-            <div>
-                <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
-                <ImageIcon className="w-3 h-3" /> OU Génération IA
-                </label>
-                <input 
-                value={imageKeyword} onChange={e => setImageKeyword(e.target.value)} 
-                placeholder="Mot clé (ex: Beer, Kart)"
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
-                disabled={!!imagePasteUrl}
                 />
             </div>
           </div>
@@ -393,7 +394,6 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
   const [editCost, setEditCost] = useState(item.cost);
   const [editDesc, setEditDesc] = useState(item.description || '');
   const [editLink, setEditLink] = useState(item.link || '');
-  const [editImageKeyword, setEditImageKeyword] = useState(''); // Keep for simple edit
   const [editImageUrl, setEditImageUrl] = useState(item.imageUrl || '');
 
   const hasVoted = item.votes.includes(userId);
@@ -408,9 +408,8 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
     e.stopPropagation();
     
     let finalUrl = editImageUrl;
-    // Si on a un mot clé IA et pas d'URL forcée, on génère
-    if (!finalUrl && editImageKeyword) {
-        finalUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(editImageKeyword)}`;
+    if (!finalUrl && editTitle) {
+        finalUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(editTitle)}`;
     }
 
     const updateData = {
@@ -596,6 +595,9 @@ export default function App() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [isParticipantsLoaded, setIsParticipantsLoaded] = useState(false);
+  
+  // Ref pour éviter le double trigger au chargement
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     localStorage.setItem('evg_active_tab', activeTab);
@@ -623,6 +625,23 @@ export default function App() {
     const unsubItems = onSnapshot(itemsQuery, (snapshot) => {
       const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setItems(itemsData);
+
+      // Notification Logic
+      if (!isInitialLoad.current) {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            const newItem = change.doc.data();
+            // Si ce n'est pas moi qui ai ajouté, on notifie
+            if (newItem.addedBy !== username) {
+               triggerNotification(
+                 "Nouvelle proposition !", 
+                 `${newItem.addedBy} a ajouté : ${newItem.title}`
+               );
+            }
+          }
+        });
+      }
+      isInitialLoad.current = false;
     });
 
     const expensesQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'evg_expenses'));
@@ -676,19 +695,14 @@ export default function App() {
       unsubCars();
       unsubUsersInfo();
     };
-  }, [user]);
+  }, [user, username]);
 
-  // Sécurité : Déconnexion forcée si le participant est supprimé
-  useEffect(() => {
-    if (isParticipantsLoaded && isJoined && username) {
-      if (!participants.includes(username)) {
-        alert("Votre profil a été supprimé de la liste des participants.");
-        localStorage.removeItem('evg_username');
-        setUsername('');
-        setIsJoined(false);
-      }
+  // Demande permission notif
+  const requestNotifPermission = () => {
+    if ('Notification' in window) {
+      Notification.requestPermission();
     }
-  }, [isParticipantsLoaded, participants, isJoined, username]);
+  };
 
   // --- LOGIQUE INSCRIPTION ET PROFIL ---
 
@@ -741,6 +755,7 @@ export default function App() {
     localStorage.setItem('evg_username', name);
     setUsername(name);
     setIsJoined(true);
+    requestNotifPermission(); // Demande notif à la connexion
     
     // Si c'est un nouveau, on l'ajoute
     if (!participants.includes(name)) {
@@ -1086,6 +1101,13 @@ export default function App() {
               {isAdminMode ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
             </button>
             <button 
+              onClick={requestNotifPermission}
+              className="p-2 rounded-lg text-gray-400 hover:text-green-600 transition-colors"
+              title="Activer les notifications"
+            >
+              <Bell className="w-5 h-5" />
+            </button>
+            <button 
               onClick={handleLogout}
               className="p-2 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
             >
@@ -1140,6 +1162,8 @@ export default function App() {
               type={activeTab === 'activity' ? 'activity' : (activeTab === 'housing' ? 'housing' : 'activity')} 
               onAdd={handleAddItem} 
               activeTab={activeTab}
+              usersInfo={usersInfo}
+              participants={participants}
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
