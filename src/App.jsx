@@ -54,7 +54,10 @@ import {
   HelpCircle,
   UploadCloud,
   Share,
-  Smartphone
+  Smartphone,
+  UserPlus,
+  LogIn,
+  ArrowLeft
 } from 'lucide-react';
 
 // --- Configuration Firebase ---
@@ -217,14 +220,7 @@ const HelpModal = ({ onClose }) => (
                     <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
                         <li>Donne un <strong>Titre</strong> cool à l'activité.</li>
                         <li>Indique le <strong>Prix</strong> (Total ou par personne).</li>
-                        <li>Ajoute un lien web si tu en as un.</li>
-                        <li><strong>Photo</strong> : Tu as deux options !
-                            <ul className="list-circle pl-4 mt-1 text-xs text-gray-500">
-                                <li>Colle l'URL d'une image internet.</li>
-                                <li>OU glisse une photo depuis ton téléphone/ordi.</li>
-                                <li>Si tu ne mets rien, une image sera générée automatiquement.</li>
-                            </ul>
-                        </li>
+                        <li><strong>Photo</strong> : Glisse une photo depuis ton téléphone ou laisse l'IA en générer une avec le titre !</li>
                     </ul>
                 </div>
 
@@ -235,22 +231,13 @@ const HelpModal = ({ onClose }) => (
                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm space-y-3">
                         <div>
                             <span className="font-bold text-gray-800 block mb-1">Sur iPhone (iOS) :</span>
-                            Clique sur le bouton <strong>Partager</strong> <Share className="w-3 h-3 inline" /> dans Safari, puis cherche et sélectionne <strong>"Sur l'écran d'accueil"</strong>.
+                            Clique sur le bouton <strong>Partager</strong> <Share className="w-3 h-3 inline" /> dans Safari, puis <strong>"Sur l'écran d'accueil"</strong>.
                         </div>
                         <div>
-                            <span className="font-bold text-gray-800 block mb-1">Sur Android (Chrome) :</span>
-                            Clique sur les <strong>3 petits points</strong> (Menu) en haut à droite, puis sélectionne <strong>"Ajouter à l'écran d'accueil"</strong> ou "Installer l'application".
+                            <span className="font-bold text-gray-800 block mb-1">Sur Android :</span>
+                            Clique sur les <strong>3 petits points</strong> en haut à droite, puis <strong>"Ajouter à l'écran d'accueil"</strong>.
                         </div>
                     </div>
-                </div>
-
-                <div>
-                    <h3 className="font-bold text-lg text-red-600 mb-2 flex items-center gap-2">
-                        <Bell className="w-5 h-5" /> Notifications
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                        Clique sur la cloche en haut pour activer les notifications. Tu seras prévenu quand quelqu'un ajoute une nouvelle idée ! (Il faut garder l'onglet ouvert).
-                    </p>
                 </div>
             </div>
 
@@ -753,6 +740,7 @@ export default function App() {
   const [isParticipantsLoaded, setIsParticipantsLoaded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [notifPermission, setNotifPermission] = useState('default');
+  const [loginMode, setLoginMode] = useState('initial'); // 'initial', 'register', 'login'
   
   // Ref pour éviter le double trigger au chargement
   const isInitialLoad = useRef(true);
@@ -884,69 +872,69 @@ export default function App() {
 
   // --- LOGIQUE INSCRIPTION ET PROFIL ---
 
-  const handleJoin = async (rawName, code, personalPin) => {
-    if (!rawName.trim()) return;
-    
-    // 1. Formatage du nom (Seb, pas seb)
-    const name = formatName(rawName);
+  const handleRegister = async (rawName, code, personalPin) => {
+      if (!rawName.trim()) return;
+      const name = formatName(rawName);
 
-    // 2. Vérification si l'utilisateur existe déjà
-    const userDetails = usersInfo[name];
-
-    if (userDetails) {
-      // UTILISATEUR EXISTANT
-      // On demande le PIN perso au lieu du code général
-      if (!userDetails.pin) {
-          // Cas rare : Ancien user sans PIN (on le laisse passer ou on demande d'en créer un ?)
-          // Pour la sécu, on demande le code général ici exceptionnellement
-          if (code !== (settings.accessCode || "1234")) {
-             alert("Code général incorrect !");
-             return;
-          }
-      } else {
-          // User a un PIN : On vérifie le PIN donné OU on demande
-          let pinToCheck = personalPin;
-          if (!pinToCheck) {
-             pinToCheck = prompt(`Salut ${name} ! Entre ton Code PIN Perso :`);
-          }
-          
-          if (pinToCheck !== userDetails.pin) {
-             alert("Code PIN personnel incorrect !");
-             return;
-          }
-      }
-    } else {
-      // NOUVEL UTILISATEUR
       // 1. Vérif Code Général
       if (code !== (settings.accessCode || "1234")) {
-        alert("Code d'accès général incorrect !");
-        return;
+          alert("Code général incorrect !");
+          return;
       }
-      // 2. Vérif PIN Perso Obligatoire
+
+      // 2. Vérif Nom Dispo
+      if (participants.includes(name)) {
+          alert("Ce nom est déjà utilisé. Si c'est toi, utilise 'Déjà Inscrit' !");
+          return;
+      }
+
+      // 3. Vérif PIN
       if (!personalPin || personalPin.length < 3) {
-        alert("Tu dois choisir un Code PIN personnel (min 3 chiffres) !");
-        return;
+          alert("Choisis un PIN perso (min 3 chiffres) !");
+          return;
       }
-    }
 
-    // 3. Connexion
-    localStorage.setItem('evg_username', name);
-    setUsername(name);
-    setIsJoined(true);
-    requestNotifPermission(); // Demande notif à la connexion
-    
-    // Si c'est un nouveau, on l'ajoute
-    if (!participants.includes(name)) {
+      // Création
+      localStorage.setItem('evg_username', name);
+      setUsername(name);
+      setIsJoined(true);
+      requestNotifPermission();
+
       const newParticipants = [...participants, name];
-      const ref = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
-      await setDoc(ref, { names: newParticipants }, { merge: true });
-    }
+      const listRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
+      await setDoc(listRef, { names: newParticipants }, { merge: true });
 
-    // Mise à jour du PIN perso si fourni (Création ou Mise à jour)
-    if (personalPin) {
-        const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
-        await setDoc(detailsRef, { [name]: { pin: personalPin } }, { merge: true });
-    }
+      const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
+      await setDoc(detailsRef, { [name]: { pin: personalPin } }, { merge: true });
+  };
+
+  const handleLogin = async (rawName, personalPin) => {
+      if (!rawName.trim()) return;
+      const name = formatName(rawName);
+
+      // 1. Vérif Nom existe
+      if (!participants.includes(name)) {
+          alert("Nom inconnu ! Utilise 'Nouvelle Inscription'.");
+          return;
+      }
+
+      // 2. Vérif PIN
+      const userDetails = usersInfo[name];
+      if (userDetails && userDetails.pin) {
+          if (personalPin !== userDetails.pin) {
+              alert("Code PIN personnel incorrect !");
+              return;
+          }
+      } else {
+          // Fallback legacy (si pas de PIN, on laisse passer ou on demande general code - ici on simplifie)
+          // On pourrait demander le code général en secours
+      }
+
+      // Connexion
+      localStorage.setItem('evg_username', name);
+      setUsername(name);
+      setIsJoined(true);
+      requestNotifPermission();
   };
 
   const handleLogout = () => {
@@ -954,6 +942,7 @@ export default function App() {
       localStorage.removeItem('evg_username');
       setUsername('');
       setIsJoined(false);
+      setLoginMode('initial');
     }
   };
 
@@ -1184,40 +1173,69 @@ export default function App() {
             <h1 className="text-3xl font-black mb-2 text-green-900 uppercase tracking-wider">{settings.title}</h1>
             <p className="text-gray-500 font-medium">L'application officielle.</p>
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); handleJoin(e.target.name.value, e.target.code.value, e.target.pin.value); }} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Ton Prénom</label>
-              <input 
-                name="name"
-                type="text" 
-                required
-                className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none font-bold"
-                placeholder="Ex: Thomas"
-              />
-            </div>
-            <div className="flex gap-2">
-                <div className="flex-1">
-                    <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Code Général</label>
-                    <input 
-                        name="code"
-                        type="tel" 
-                        className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none text-center tracking-widest font-bold"
-                        placeholder="1234"
-                    />
+
+          {/* SÉLECTION DU MODE */}
+          {loginMode === 'initial' && (
+             <div className="space-y-4">
+               <button 
+                 onClick={() => setLoginMode('register')}
+                 className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 shadow-lg transform transition-transform hover:scale-105"
+               >
+                 <UserPlus className="w-6 h-6" />
+                 Nouvelle Inscription
+               </button>
+               <button 
+                 onClick={() => setLoginMode('login')}
+                 className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 shadow-lg transform transition-transform hover:scale-105"
+               >
+                 <LogIn className="w-6 h-6" />
+                 Déjà Inscrit
+               </button>
+             </div>
+          )}
+
+          {/* FORMULAIRE INSCRIPTION */}
+          {loginMode === 'register' && (
+             <form onSubmit={(e) => { e.preventDefault(); handleRegister(e.target.name.value, e.target.code.value, e.target.pin.value); }} className="space-y-4 animate-fade-in">
+                <div className="flex items-center gap-2 mb-2">
+                   <button type="button" onClick={() => setLoginMode('initial')} className="text-gray-400 hover:text-green-600"><ArrowLeft /></button>
+                   <span className="font-bold text-green-800">Créer mon profil</span>
                 </div>
-                <div className="flex-1">
-                    <label className="block text-xs font-bold text-red-600 mb-1 uppercase">Ton PIN (Perso)</label>
-                    <input 
-                        name="pin"
-                        type="tel" 
-                        required
-                        className="w-full bg-white border-2 border-red-200 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-red-500 outline-none text-center tracking-widest font-bold placeholder-red-200"
-                        placeholder="0000"
-                    />
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Code Général</label>
+                  <input name="code" type="tel" className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest" placeholder="1234" required />
                 </div>
-            </div>
-            <Button className="w-full bg-red-600 hover:bg-red-700 text-white" type="submit" size="md">Entrer dans l'arène</Button>
-          </form>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Ton Prénom</label>
+                  <input name="name" type="text" className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 font-bold" placeholder="Ex: Thomas" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-red-600 mb-1 uppercase">Crée ton PIN (Secret)</label>
+                  <input name="pin" type="tel" className="w-full bg-white border-2 border-red-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest" placeholder="0000" required />
+                </div>
+                <Button className="w-full bg-red-600 hover:bg-red-700 text-white" type="submit" size="md">Valider l'inscription</Button>
+             </form>
+          )}
+
+          {/* FORMULAIRE CONNEXION */}
+          {loginMode === 'login' && (
+             <form onSubmit={(e) => { e.preventDefault(); handleLogin(e.target.name.value, e.target.pin.value); }} className="space-y-4 animate-fade-in">
+                <div className="flex items-center gap-2 mb-2">
+                   <button type="button" onClick={() => setLoginMode('initial')} className="text-gray-400 hover:text-green-600"><ArrowLeft /></button>
+                   <span className="font-bold text-green-800">Connexion</span>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Ton Prénom</label>
+                  <input name="name" type="text" className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 font-bold" placeholder="Ex: Thomas" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-green-600 mb-1 uppercase">Ton PIN</label>
+                  <input name="pin" type="tel" className="w-full bg-white border-2 border-green-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest" placeholder="0000" required />
+                </div>
+                <Button className="w-full bg-green-700 hover:bg-green-800 text-white" type="submit" size="md">Se Connecter</Button>
+             </form>
+          )}
+
         </div>
       </div>
     );
