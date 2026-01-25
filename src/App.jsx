@@ -50,7 +50,11 @@ import {
   LogOut,
   UserCog,
   Link as LinkIcon,
-  Bell
+  Bell,
+  HelpCircle,
+  UploadCloud,
+  Share,
+  Smartphone
 } from 'lucide-react';
 
 // --- Configuration Firebase ---
@@ -99,6 +103,35 @@ const triggerNotification = (title, body) => {
       }
     });
   }
+};
+
+// Fonction pour redimensionner une image avant upload (Base64)
+const resizeImage = (file, maxWidth = 800) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const elem = document.createElement('canvas');
+                const scaleFactor = maxWidth / img.width;
+                const newWidth = Math.min(img.width, maxWidth);
+                const newHeight = img.height * (newWidth / img.width);
+                
+                elem.width = newWidth;
+                elem.height = newHeight;
+                
+                const ctx = elem.getContext('2d');
+                ctx.drawImage(img, 0, 0, newWidth, newHeight);
+                
+                // Compression JPEG 0.7
+                resolve(elem.toDataURL('image/jpeg', 0.7));
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
 };
 
 // --- Composants UI "Féria" ---
@@ -165,6 +198,67 @@ const BudgetCard = ({ title, amount, icon: Icon, color, desc }) => (
       <p className="text-xs text-gray-400">{desc}</p>
     </div>
   </Card>
+);
+
+// --- Composant Aide (Modal) ---
+const HelpModal = ({ onClose }) => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+        <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto relative border-green-500 border-4">
+            <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-red-500"><X className="w-6 h-6" /></button>
+            <h2 className="text-2xl font-black text-green-900 mb-6 flex items-center gap-2">
+                <HelpCircle className="w-8 h-8 text-red-500" /> Centre d'Aide
+            </h2>
+            
+            <div className="space-y-6">
+                <div>
+                    <h3 className="font-bold text-lg text-red-600 mb-2 flex items-center gap-2">
+                        <Edit2 className="w-5 h-5" /> Remplir une fiche
+                    </h3>
+                    <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                        <li>Donne un <strong>Titre</strong> cool à l'activité.</li>
+                        <li>Indique le <strong>Prix</strong> (Total ou par personne).</li>
+                        <li>Ajoute un lien web si tu en as un.</li>
+                        <li><strong>Photo</strong> : Tu as deux options !
+                            <ul className="list-circle pl-4 mt-1 text-xs text-gray-500">
+                                <li>Colle l'URL d'une image internet.</li>
+                                <li>OU glisse une photo depuis ton téléphone/ordi.</li>
+                                <li>Si tu ne mets rien, une image sera générée automatiquement.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 className="font-bold text-lg text-red-600 mb-2 flex items-center gap-2">
+                        <Smartphone className="w-5 h-5" /> Installer l'App
+                    </h3>
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm space-y-3">
+                        <div>
+                            <span className="font-bold text-gray-800 block mb-1">Sur iPhone (iOS) :</span>
+                            Clique sur le bouton <strong>Partager</strong> <Share className="w-3 h-3 inline" /> dans Safari, puis cherche et sélectionne <strong>"Sur l'écran d'accueil"</strong>.
+                        </div>
+                        <div>
+                            <span className="font-bold text-gray-800 block mb-1">Sur Android (Chrome) :</span>
+                            Clique sur les <strong>3 petits points</strong> (Menu) en haut à droite, puis sélectionne <strong>"Ajouter à l'écran d'accueil"</strong> ou "Installer l'application".
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="font-bold text-lg text-red-600 mb-2 flex items-center gap-2">
+                        <Bell className="w-5 h-5" /> Notifications
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                        Clique sur la cloche en haut pour activer les notifications. Tu seras prévenu quand quelqu'un ajoute une nouvelle idée ! (Il faut garder l'onglet ouvert).
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-6">
+                <Button onClick={onClose} className="w-full">Compris !</Button>
+            </div>
+        </Card>
+    </div>
 );
 
 // --- Formulaires & Cartes ---
@@ -253,6 +347,34 @@ const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
   const [description, setDescription] = useState('');
   const [imagePasteUrl, setImagePasteUrl] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          try {
+              const base64 = await resizeImage(file);
+              setImagePasteUrl(base64);
+          } catch (err) {
+              alert("Erreur lors du traitement de l'image");
+          }
+      }
+  };
+
+  const handleDrop = async (e) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+          try {
+              const base64 = await resizeImage(file);
+              setImagePasteUrl(base64);
+          } catch (err) {
+              alert("Erreur lors du traitement de l'image");
+          }
+      }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -365,16 +487,50 @@ const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
             />
           </div>
           <div className="space-y-2">
-            <div>
-                <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
-                <LinkIcon className="w-3 h-3" /> Image (URL directe)
-                </label>
+            <label className="block text-xs uppercase text-gray-500 font-bold mb-1 flex items-center gap-1">
+            <ImageIcon className="w-3 h-3" /> Image (URL ou Fichier)
+            </label>
+            
+            {/* Zone de Drag & Drop */}
+            <div 
+                className={`w-full border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${isDragOver ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:bg-gray-50'}`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current.click()}
+            >
                 <input 
-                value={imagePasteUrl} onChange={e => setImagePasteUrl(e.target.value)} 
-                placeholder="Coller le lien d'une image ici... (Sinon IA auto)"
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleFileChange} 
+                />
+                {imagePasteUrl && imagePasteUrl.startsWith('data:') ? (
+                    <div className="flex flex-col items-center">
+                        <img src={imagePasteUrl} alt="Preview" className="h-20 w-auto rounded mb-2 object-cover" />
+                        <span className="text-xs text-green-600 font-bold">Image chargée !</span>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center text-gray-500">
+                        <UploadCloud className="w-6 h-6 mb-1" />
+                        <span className="text-xs">Glisse une image ou clique pour choisir</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">ou colle un lien :</span>
+                <input 
+                    value={imagePasteUrl.startsWith('data:') ? '' : imagePasteUrl} 
+                    onChange={e => setImagePasteUrl(e.target.value)} 
+                    placeholder="https://..."
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
                 />
             </div>
+            <p className="text-[10px] text-gray-400 italic">
+                * Si aucune image n'est fournie, une illustration IA sera générée.
+            </p>
           </div>
         </div>
         <div className="flex justify-end gap-3 pt-2">
@@ -595,6 +751,8 @@ export default function App() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [isParticipantsLoaded, setIsParticipantsLoaded] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [notifPermission, setNotifPermission] = useState('default');
   
   // Ref pour éviter le double trigger au chargement
   const isInitialLoad = useRef(true);
@@ -602,6 +760,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('evg_active_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+      if ('Notification' in window) {
+          setNotifPermission(Notification.permission);
+      }
+  }, []);
 
   // Initialisation Auth
   useEffect(() => {
@@ -700,9 +864,23 @@ export default function App() {
   // Demande permission notif
   const requestNotifPermission = () => {
     if ('Notification' in window) {
-      Notification.requestPermission();
+      Notification.requestPermission().then(permission => {
+          setNotifPermission(permission);
+      });
     }
   };
+
+  // Sécurité : Déconnexion forcée si le participant est supprimé
+  useEffect(() => {
+    if (isParticipantsLoaded && isJoined && username) {
+      if (!participants.includes(username)) {
+        alert("Votre profil a été supprimé de la liste des participants.");
+        localStorage.removeItem('evg_username');
+        setUsername('');
+        setIsJoined(false);
+      }
+    }
+  }, [isParticipantsLoaded, participants, isJoined, username]);
 
   // --- LOGIQUE INSCRIPTION ET PROFIL ---
 
@@ -1101,11 +1279,18 @@ export default function App() {
               {isAdminMode ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
             </button>
             <button 
-              onClick={requestNotifPermission}
-              className="p-2 rounded-lg text-gray-400 hover:text-green-600 transition-colors"
-              title="Activer les notifications"
+              onClick={() => setShowHelp(true)}
+              className="p-2 rounded-lg text-gray-400 hover:text-blue-500 transition-colors"
+              title="Aide"
             >
-              <Bell className="w-5 h-5" />
+              <HelpCircle className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={requestNotifPermission}
+              className={`p-2 rounded-lg transition-colors ${notifPermission === 'granted' ? 'text-green-600' : 'text-gray-400 hover:text-green-600 animate-pulse'}`}
+              title={notifPermission === 'granted' ? "Notifications activées" : "Activer les notifications"}
+            >
+              <Bell className={`w-5 h-5 ${notifPermission === 'default' ? 'animate-bounce' : ''}`} />
             </button>
             <button 
               onClick={handleLogout}
@@ -1153,6 +1338,8 @@ export default function App() {
           <Users className="w-6 h-6 mb-1" /> Potes
         </button>
       </div>
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
       <main className="max-w-6xl mx-auto p-4 md:py-8">
         
