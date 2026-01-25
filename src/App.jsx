@@ -1203,17 +1203,27 @@ export default function App() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Code Général</label>
-                  <input name="code" type="tel" className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest" placeholder="1234" required />
+                  <input name="code" type="tel" className="w-full bg-white border-2 border-gray-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest text-gray-900 focus:ring-2 focus:ring-green-500 outline-none" placeholder="1234" required />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Ton Prénom</label>
-                  <input name="name" type="text" className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 font-bold" placeholder="Ex: Thomas" required />
+                  <input name="name" type="text" className="w-full bg-white border-2 border-gray-200 rounded-lg px-4 py-3 font-bold text-gray-900 focus:ring-2 focus:ring-green-500 outline-none" placeholder="Ex: Thomas" required />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-red-600 mb-1 uppercase">Crée ton PIN (Secret)</label>
-                  <input name="pin" type="tel" className="w-full bg-white border-2 border-red-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest" placeholder="0000" required />
+                  <input name="pin" type="tel" className="w-full bg-white border-2 border-red-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest text-gray-900 focus:ring-2 focus:ring-red-500 outline-none" placeholder="0000" required />
                 </div>
                 <Button className="w-full bg-red-600 hover:bg-red-700 text-white" type="submit" size="md">Valider l'inscription</Button>
+                
+                <div className="text-center pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setLoginMode('login')}
+                    className="text-sm text-green-700 font-bold hover:underline"
+                  >
+                    Déjà inscrit ? Se connecter
+                  </button>
+                </div>
              </form>
           )}
 
@@ -1226,13 +1236,23 @@ export default function App() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Ton Prénom</label>
-                  <input name="name" type="text" className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg px-4 py-3 font-bold" placeholder="Ex: Thomas" required />
+                  <input name="name" type="text" className="w-full bg-white border-2 border-gray-200 rounded-lg px-4 py-3 font-bold text-gray-900 focus:ring-2 focus:ring-green-500 outline-none" placeholder="Ex: Thomas" required />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-green-600 mb-1 uppercase">Ton PIN</label>
-                  <input name="pin" type="tel" className="w-full bg-white border-2 border-green-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest" placeholder="0000" required />
+                  <input name="pin" type="tel" className="w-full bg-white border-2 border-green-200 rounded-lg px-4 py-3 font-bold text-center tracking-widest text-gray-900 focus:ring-2 focus:ring-green-500 outline-none" placeholder="0000" required />
                 </div>
                 <Button className="w-full bg-green-700 hover:bg-green-800 text-white" type="submit" size="md">Se Connecter</Button>
+
+                <div className="text-center pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setLoginMode('register')}
+                    className="text-sm text-red-600 font-bold hover:underline"
+                  >
+                    Pas encore de compte ? S'inscrire
+                  </button>
+                </div>
              </form>
           )}
 
