@@ -79,7 +79,7 @@ try {
   console.error("Erreur initialisation Firebase:", error);
 }
 
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const appId = 'evg-manager-v1';
 
 // --- Utilitaires ---
 const formatName = (name) => {
@@ -293,7 +293,7 @@ const AddExpenseForm = ({ participants, onAdd }) => {
           <input 
             value={title} onChange={e => setTitle(e.target.value)} required 
             placeholder="Ex: Courses Carrefour, Essence..."
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+            className="w-full bg-white border-2 border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -302,14 +302,14 @@ const AddExpenseForm = ({ participants, onAdd }) => {
             <input 
               type="number" value={amount} onChange={e => setAmount(e.target.value)} required 
               placeholder="0"
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+              className="w-full bg-white border-2 border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
             />
           </div>
           <div>
             <label className="block text-xs uppercase text-gray-500 font-bold mb-1">Qui a payé ?</label>
             <select 
               value={payer} onChange={e => setPayer(e.target.value)} required
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+              className="w-full bg-white border-2 border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
             >
               <option value="">Choisir...</option>
               <option value="Tous">Tous (Chacun sa part)</option>
@@ -420,7 +420,7 @@ const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
           <input 
             value={title} onChange={e => setTitle(e.target.value)} required 
             placeholder={activeTab === 'activities' ? "Ex: Karting, Piscine..." : "Ex: Villa avec Piscine"}
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+            className="w-full bg-white border-2 border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
           />
         </div>
         <div>
@@ -430,7 +430,7 @@ const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
           <textarea 
             value={description} onChange={e => setDescription(e.target.value)} 
             placeholder="Détails, horaires, pourquoi c'est cool..."
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none h-20 resize-none"
+            className="w-full bg-white border-2 border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none h-20 resize-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -439,7 +439,7 @@ const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
             <input 
               type="number" value={cost} onChange={e => setCost(e.target.value)} required 
               placeholder="0"
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+              className="w-full bg-white border-2 border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
             />
           </div>
           <div>
@@ -470,7 +470,7 @@ const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
             <input 
               type="url" value={link} onChange={e => setLink(e.target.value)} 
               placeholder="https://..."
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+              className="w-full bg-white border-2 border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
             />
           </div>
           <div className="space-y-2">
@@ -512,7 +512,7 @@ const AddItemForm = ({ type, onAdd, activeTab, usersInfo, participants }) => {
                     value={imagePasteUrl.startsWith('data:') ? '' : imagePasteUrl} 
                     onChange={e => setImagePasteUrl(e.target.value)} 
                     placeholder="https://..."
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
+                    className="flex-1 bg-white border-2 border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 focus:ring-2 focus:ring-green-500 outline-none"
                 />
             </div>
             <p className="text-[10px] text-gray-400 italic">
@@ -539,8 +539,8 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
   const [editLink, setEditLink] = useState(item.link || '');
   const [editImageUrl, setEditImageUrl] = useState(item.imageUrl || '');
 
-  const hasVoted = item.votes.includes(userId);
-  const voteCount = item.votes.length;
+  const hasVoted = item.votes && item.votes.includes(userId);
+  const voteCount = item.votes ? item.votes.length : 0;
   const isTrending = voteCount >= (totalParticipants / 2) && totalParticipants > 0;
   
   const displayCost = item.priceType === 'perPerson' 
@@ -568,7 +568,6 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
   };
 
   const toggleFlip = (e) => {
-    // Si on clique sur un bouton interactif, on ne retourne pas
     if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) return;
     setIsFlipped(!isFlipped);
   };
@@ -578,13 +577,13 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
       <Card className="border-green-500 ring-2 ring-green-100">
         <div className="space-y-3" onClick={e => e.stopPropagation()}>
           <h4 className="font-bold text-green-900 flex items-center gap-2"><Edit2 className="w-4 h-4"/> Modification</h4>
-          <input className="w-full bg-gray-50 border border-gray-200 p-2 rounded" value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Titre" />
-          <textarea className="w-full bg-gray-50 border border-gray-200 p-2 rounded h-20" value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Description" />
+          <input className="w-full bg-white border-2 border-gray-200 p-2 rounded text-gray-900" value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Titre" />
+          <textarea className="w-full bg-white border-2 border-gray-200 p-2 rounded h-20 text-gray-900" value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Description" />
           <div className="flex gap-2">
-            <input className="w-1/2 bg-gray-50 border border-gray-200 p-2 rounded" type="number" value={editCost} onChange={e => setEditCost(e.target.value)} placeholder="Prix" />
-            <input className="w-1/2 bg-gray-50 border border-gray-200 p-2 rounded" value={editLink} onChange={e => setEditLink(e.target.value)} placeholder="Lien" />
+            <input className="w-1/2 bg-white border-2 border-gray-200 p-2 rounded text-gray-900" type="number" value={editCost} onChange={e => setEditCost(e.target.value)} placeholder="Prix" />
+            <input className="w-1/2 bg-white border-2 border-gray-200 p-2 rounded text-gray-900" value={editLink} onChange={e => setEditLink(e.target.value)} placeholder="Lien" />
           </div>
-          <input className="w-full bg-gray-50 border border-gray-200 p-2 rounded" value={editImageUrl} onChange={e => setEditImageUrl(e.target.value)} placeholder="URL Image (Optionnel)" />
+          <input className="w-full bg-white border-2 border-gray-200 p-2 rounded text-gray-900" value={editImageUrl} onChange={e => setEditImageUrl(e.target.value)} placeholder="URL Image (Optionnel)" />
           <div className="flex justify-end gap-2 mt-2">
             <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setIsEditing(false); }}>Annuler</Button>
             <Button size="sm" onClick={handleSave}><Save className="w-4 h-4"/> Enregistrer</Button>
@@ -649,34 +648,43 @@ const ItemCard = ({ item, userId, totalParticipants, onVote, onToggleValidate, o
                 )}
             </div>
 
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onVote(); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-sm font-bold ${
-                    hasVoted 
-                      ? 'bg-red-500 text-white shadow-md shadow-red-200' 
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                  }`}
-                >
-                  <ThumbsUp className={`w-4 h-4 ${hasVoted ? 'fill-current' : ''}`} />
-                  {voteCount}
-                </button>
-                {isTrending && !item.validated && (
-                  <span className="text-xs text-orange-500 font-bold flex items-center gap-1 animate-pulse">
-                     🔥 Hot
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{item.addedBy}</span>
-                {(item.addedBy === userId || isAdmin) && (
-                  <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-gray-300 hover:text-red-500 p-1 transition-colors">
-                    <Trash2 className="w-4 h-4" />
+            <div className="flex flex-col mt-auto pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onVote(); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-sm font-bold ${
+                      hasVoted 
+                        ? 'bg-red-500 text-white shadow-md shadow-red-200' 
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                  >
+                    <ThumbsUp className={`w-4 h-4 ${hasVoted ? 'fill-current' : ''}`} />
+                    {voteCount}
                   </button>
-                )}
+                  {isTrending && !item.validated && (
+                    <span className="text-xs text-orange-500 font-bold flex items-center gap-1 animate-pulse">
+                       🔥 Hot
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{item.addedBy}</span>
+                  {(item.addedBy === userId || isAdmin) && (
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-gray-300 hover:text-red-500 p-1 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
+              
+              {/* LISTE DES VOTANTS */}
+              {voteCount > 0 && (
+                <div className="text-[10px] text-gray-500 leading-tight mt-1">
+                  <span className="font-bold">Votants :</span> {item.votes.join(', ')}
+                </div>
+              )}
             </div>
           </div>
       </div>
@@ -740,9 +748,8 @@ export default function App() {
   const [isParticipantsLoaded, setIsParticipantsLoaded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [notifPermission, setNotifPermission] = useState('default');
-  const [loginMode, setLoginMode] = useState('initial'); // 'initial', 'register', 'login'
+  const [loginMode, setLoginMode] = useState('initial'); 
   
-  // Ref pour éviter le double trigger au chargement
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
@@ -778,12 +785,10 @@ export default function App() {
       const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setItems(itemsData);
 
-      // Notification Logic
       if (!isInitialLoad.current) {
         snapshot.docChanges().forEach((change) => {
           if (change.type === "added") {
             const newItem = change.doc.data();
-            // Si ce n'est pas moi qui ai ajouté, on notifie
             if (newItem.addedBy !== username) {
                triggerNotification(
                  "Nouvelle proposition !", 
@@ -849,7 +854,6 @@ export default function App() {
     };
   }, [user, username]);
 
-  // Demande permission notif
   const requestNotifPermission = () => {
     if ('Notification' in window) {
       Notification.requestPermission().then(permission => {
@@ -858,43 +862,25 @@ export default function App() {
     }
   };
 
-  // Sécurité : Déconnexion forcée si le participant est supprimé
-  useEffect(() => {
-    if (isParticipantsLoaded && isJoined && username) {
-      if (!participants.includes(username)) {
-        alert("Votre profil a été supprimé de la liste des participants.");
-        localStorage.removeItem('evg_username');
-        setUsername('');
-        setIsJoined(false);
-      }
-    }
-  }, [isParticipantsLoaded, participants, isJoined, username]);
-
-  // --- LOGIQUE INSCRIPTION ET PROFIL ---
-
   const handleRegister = async (rawName, code, personalPin) => {
       if (!rawName.trim()) return;
       const name = formatName(rawName);
 
-      // 1. Vérif Code Général
       if (code !== (settings.accessCode || "1234")) {
           alert("Code général incorrect !");
           return;
       }
 
-      // 2. Vérif Nom Dispo
       if (participants.includes(name)) {
           alert("Ce nom est déjà utilisé. Si c'est toi, utilise 'Déjà Inscrit' !");
           return;
       }
 
-      // 3. Vérif PIN
       if (!personalPin || personalPin.length < 3) {
           alert("Choisis un PIN perso (min 3 chiffres) !");
           return;
       }
 
-      // Création
       localStorage.setItem('evg_username', name);
       setUsername(name);
       setIsJoined(true);
@@ -912,25 +898,19 @@ export default function App() {
       if (!rawName.trim()) return;
       const name = formatName(rawName);
 
-      // 1. Vérif Nom existe
       if (!participants.includes(name)) {
           alert("Nom inconnu ! Utilise 'Nouvelle Inscription'.");
           return;
       }
 
-      // 2. Vérif PIN
       const userDetails = usersInfo[name];
       if (userDetails && userDetails.pin) {
           if (personalPin !== userDetails.pin) {
               alert("Code PIN personnel incorrect !");
               return;
           }
-      } else {
-          // Fallback legacy (si pas de PIN, on laisse passer ou on demande general code - ici on simplifie)
-          // On pourrait demander le code général en secours
       }
 
-      // Connexion
       localStorage.setItem('evg_username', name);
       setUsername(name);
       setIsJoined(true);
@@ -982,12 +962,10 @@ export default function App() {
   const handleRemoveParticipant = async (nameToRemove) => {
     if (!confirm(`Supprimer ${nameToRemove} de la liste ?\nAttention : Ses données de connexion (PIN) seront effacées.`)) return;
     
-    // 1. Update List
     const newParticipants = participants.filter(p => p !== nameToRemove);
     const listRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'list');
     await setDoc(listRef, { names: newParticipants }, { merge: true });
 
-    // 2. Clear PIN/Details (Reset Registration)
     const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
     await updateDoc(detailsRef, {
         [nameToRemove]: deleteField()
@@ -1017,12 +995,12 @@ export default function App() {
   };
 
   const handleVote = async (item) => {
-    const hasVoted = item.votes.includes(username);
-    let newVotes;
+    const hasVoted = item.votes && item.votes.includes(username);
+    let newVotes = item.votes || [];
     if (hasVoted) {
-      newVotes = item.votes.filter(v => v !== username);
+      newVotes = newVotes.filter(v => v !== username);
     } else {
-      newVotes = [...item.votes, username];
+      newVotes = [...newVotes, username];
     }
     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'evg_items', item.id), {
       votes: newVotes
@@ -1039,12 +1017,12 @@ export default function App() {
   };
 
   const handleVoteDate = async (dateItem) => {
-    const hasVoted = dateItem.votes.includes(username);
-    let newVotes;
+    const hasVoted = dateItem.votes && dateItem.votes.includes(username);
+    let newVotes = dateItem.votes || [];
     if (hasVoted) {
-      newVotes = dateItem.votes.filter(v => v !== username);
+      newVotes = newVotes.filter(v => v !== username);
     } else {
-      newVotes = [...dateItem.votes, username];
+      newVotes = [...newVotes, username];
     }
     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'evg_dates', dateItem.id), {
       votes: newVotes
@@ -1091,8 +1069,7 @@ export default function App() {
     const activities = items.filter(i => i.type === 'activity');
     const housing = items.filter(i => i.type === 'housing');
     
-    // Sort housings by votes desc
-    const sortedHousing = [...housing].sort((a, b) => b.votes.length - a.votes.length);
+    const sortedHousing = [...housing].sort((a, b) => (b.votes ? b.votes.length : 0) - (a.votes ? a.votes.length : 0));
     const topHousing = sortedHousing[0];
     const userCount = Math.max(participants.length, 1);
 
@@ -1104,19 +1081,12 @@ export default function App() {
       return baseCost;
     };
 
-    // ACTIVITIES
     const activitiesValidated = activities.filter(i => i.validated).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
-    const activitiesTrending = activities.filter(i => i.validated || (i.votes.length >= userCount / 2)).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
+    const activitiesTrending = activities.filter(i => i.validated || ((i.votes ? i.votes.length : 0) >= userCount / 2)).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
     const activitiesTotal = activities.reduce((acc, curr) => acc + calculateItemCost(curr), 0);
 
-    // HOUSING (Special Logic: Only ONE housing counts)
-    // 1. Validated: Sum of Validated Housing(s). If multiple validated, sum them (Admin choice). If none, 0.
     const housingValidated = housing.filter(i => i.validated).reduce((acc, curr) => acc + calculateItemCost(curr), 0);
-    
-    // 2. Trending: Cost of the TOP VOTED housing only.
     const housingTrending = topHousing ? calculateItemCost(topHousing) : 0;
-
-    // 3. Total: Cost of the TOP VOTED housing only (Assumption: we sleep in one place).
     const housingTotal = topHousing ? calculateItemCost(topHousing) : 0;
 
     return { 
@@ -1174,7 +1144,6 @@ export default function App() {
             <p className="text-gray-500 font-medium">L'application officielle.</p>
           </div>
 
-          {/* SÉLECTION DU MODE */}
           {loginMode === 'initial' && (
              <div className="space-y-4">
                <button 
@@ -1194,7 +1163,6 @@ export default function App() {
              </div>
           )}
 
-          {/* FORMULAIRE INSCRIPTION */}
           {loginMode === 'register' && (
              <form onSubmit={(e) => { e.preventDefault(); handleRegister(e.target.name.value, e.target.code.value, e.target.pin.value); }} className="space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 mb-2">
@@ -1227,7 +1195,6 @@ export default function App() {
              </form>
           )}
 
-          {/* FORMULAIRE CONNEXION */}
           {loginMode === 'login' && (
              <form onSubmit={(e) => { e.preventDefault(); handleLogin(e.target.name.value, e.target.pin.value); }} className="space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 mb-2">
@@ -1444,24 +1411,32 @@ export default function App() {
                      const votes = dateItem.votes || [];
                      const hasVoted = votes.includes(username);
                      return (
-                       <div key={dateItem.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-green-100">
-                         <div className="flex flex-col">
-                            <span className="font-bold text-green-900">{formatDateRange(dateItem.date, dateItem.endDate)}</span>
-                            <span className="text-xs text-gray-500 font-bold">{votes.length} votes</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                           <button 
-                             onClick={() => handleVoteDate(dateItem)}
-                             className={`p-2 rounded-lg transition-all ${hasVoted ? 'bg-red-500 text-white shadow-md' : 'bg-white text-gray-400 border border-gray-200 hover:border-red-300'}`}
-                           >
-                             <ThumbsUp className="w-4 h-4" />
-                           </button>
-                           {(dateItem.addedBy === username || isAdminMode) && (
-                             <button onClick={() => handleDeleteLogistics('evg_dates', dateItem.id)} className="text-gray-400 hover:text-red-500">
-                               <Trash2 className="w-4 h-4" />
+                       <div key={dateItem.id} className="flex flex-col bg-gray-50 p-3 rounded-lg border border-green-100">
+                         <div className="flex items-center justify-between">
+                           <div className="flex flex-col">
+                              <span className="font-bold text-green-900">{formatDateRange(dateItem.date, dateItem.endDate)}</span>
+                              <span className="text-xs text-gray-500 font-bold">{votes.length} votes</span>
+                           </div>
+                           <div className="flex items-center gap-2">
+                             <button 
+                               onClick={() => handleVoteDate(dateItem)}
+                               className={`p-2 rounded-lg transition-all ${hasVoted ? 'bg-red-500 text-white shadow-md' : 'bg-white text-gray-400 border border-gray-200 hover:border-red-300'}`}
+                             >
+                               <ThumbsUp className="w-4 h-4" />
                              </button>
-                           )}
+                             {(dateItem.addedBy === username || isAdminMode) && (
+                               <button onClick={() => handleDeleteLogistics('evg_dates', dateItem.id)} className="text-gray-400 hover:text-red-500">
+                                 <Trash2 className="w-4 h-4" />
+                               </button>
+                             )}
+                           </div>
                          </div>
+                         {/* Liste des votants pour les dates */}
+                         {votes.length > 0 && (
+                           <div className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-green-100">
+                             <span className="font-bold">Votants :</span> {votes.join(', ')}
+                           </div>
+                         )}
                        </div>
                      )
                    })}
