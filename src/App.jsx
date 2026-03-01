@@ -79,7 +79,8 @@ try {
   console.error("Erreur initialisation Firebase:", error);
 }
 
-const appId = 'evg-manager-v1';
+// CORRECTION : On remet l'ancienne méthode pour retrouver le chemin d'origine des données
+const appId = typeof __app_id !== 'undefined' ? __app_id.replace(/[^a-zA-Z0-9-]/g, '_') : 'default-app-id';
 
 // --- Utilitaires ---
 const formatName = (name) => {
