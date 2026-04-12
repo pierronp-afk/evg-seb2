@@ -1753,22 +1753,19 @@ export default function App() {
                          </button>
                        )}
                      </div>
-                     {isAdminMode && (
-                       <div className="flex items-center gap-2 bg-gray-50 rounded px-2 py-1 border border-gray-200">
-                         <span className="text-[10px] text-gray-400 font-mono flex-1 truncate" title={uid || 'Non enregistré'}>
-                           {uid ? uid : <em className="text-gray-300">UID non encore enregistré</em>}
-                         </span>
-                         {uid && (
-                           <button
-                             onClick={() => { navigator.clipboard.writeText(uid); alert(`UID de ${p} copié !`); }}
-                             className="text-[10px] font-bold text-green-600 hover:text-green-800 whitespace-nowrap border border-green-200 rounded px-1.5 py-0.5 bg-white"
-                             title="Copier l'UID"
-                           >
-                             Copier
-                           </button>
-                         )}
-                       </div>
-                     )}
+                    {isAdminMode && (
+  <div className="flex items-center gap-2 bg-gray-50 rounded px-2 py-1 border border-gray-200">
+    <span className="text-[10px] text-gray-500 font-mono flex-1">
+      PIN : <strong>{usersInfo[p]?.pin || 'non défini'}</strong>
+    </span>
+    <button
+      onClick={() => { navigator.clipboard.writeText(usersInfo[p]?.pin || ''); alert(`PIN de ${p} copié !`); }}
+      className="text-[10px] font-bold text-green-600 border border-green-200 rounded px-1.5 py-0.5 bg-white"
+    >
+      Copier
+    </button>
+  </div>
+)}
                    </div>
                    );
                  })}
