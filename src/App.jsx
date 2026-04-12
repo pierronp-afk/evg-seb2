@@ -892,7 +892,7 @@ export default function App() {
       await setDoc(listRef, { names: newParticipants }, { merge: true });
 
       const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
-      await setDoc(detailsRef, { [name]: { pin: personalPin } }, { merge: true });
+await setDoc(detailsRef, { [name]: { pin: personalPin, uid: user?.uid || '' } }, { merge: true });
   };
 
   const handleLogin = async (rawName, personalPin) => {
@@ -916,6 +916,10 @@ export default function App() {
       setUsername(name);
       setIsJoined(true);
       requestNotifPermission();
+    if (user?.uid) {
+  const detailsRef = doc(db, 'artifacts', appId, 'public', 'data', 'participants', 'details');
+  await setDoc(detailsRef, { [name]: { uid: user.uid } }, { merge: true });
+}
   };
 
   const handleLogout = () => {
@@ -1730,22 +1734,42 @@ export default function App() {
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                  {participants.map((p, idx) => (
-                   <div key={idx} className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm justify-between">
-                     <div className="flex items-center gap-3">
-                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-lg font-bold text-white shadow-md">
-                         {p.charAt(0).toUpperCase()}
-                       </div>
-                       <span className="font-bold text-gray-700">{p}</span>
-                       {p === username && <span className="ml-auto text-[10px] font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">MOI</span>}
-                     </div>
-                     {isAdminMode && (
-                       <button onClick={() => handleRemoveParticipant(p)} className="text-gray-300 hover:text-red-500 transition-colors p-2">
-                         <X className="w-4 h-4" />
-                       </button>
-                     )}
-                   </div>
-                 ))}
-               </div>
+                 {participants.map((p, idx) => {
+  const uid = usersInfo[p]?.uid || '';
+  return (
+    <div key={idx} className="flex flex-col gap-2 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+      <div className="flex items-center gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-lg font-bold text-white shadow-md">
+            {p.charAt(0).toUpperCase()}
+          </div>
+          <span className="font-bold text-gray-700">{p}</span>
+          {p === username && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">MOI</span>}
+        </div>
+        {isAdminMode && (
+          <button onClick={() => handleRemoveParticipant(p)} className="text-gray-300 hover:text-red-500 p-2">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      {isAdminMode && (
+        <div className="flex items-center gap-2 bg-gray-50 rounded px-2 py-1 border border-gray-200">
+          <span className="text-[10px] text-gray-400 font-mono flex-1 truncate">
+            {uid || <em className="text-gray-300">UID pas encore enregistré</em>}
+          </span>
+          {uid && (
+            <button
+              onClick={() => { navigator.clipboard.writeText(uid); alert(`UID de ${p} copié !`); }}
+              className="text-[10px] font-bold text-green-600 border border-green-200 rounded px-1.5 py-0.5 bg-white"
+            >
+              Copier
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+})}
              </Card>
           </div>
         )}
